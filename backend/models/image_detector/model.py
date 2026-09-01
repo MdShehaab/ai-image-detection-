@@ -114,16 +114,27 @@ class DeepfakeImageDetector:
                 input_tensor = self.preprocess_image(image_path)
                 raw_preds = self.model.predict(input_tensor, verbose=0)[0]
 
-                prob_ai_gen = float(raw_preds[0])
-                prob_ai_mod = float(raw_preds[1])
-                prob_real = float(raw_preds[2])
+                # Post-hoc calibration step: correct for training loss class weights [1.45, 1.52, 1.00]
+                class_weights = np.array([1.45, 1.52, 1.00], dtype=np.float32)
+                calibrated = raw_preds / class_weights
+                calibrated = calibrated / np.sum(calibrated)
 
-                top_idx = int(np.argmax(raw_preds))
+                # Raw uncalibrated probabilities for logging/debugging
+                raw_prob_gen = float(raw_preds[0])
+                raw_prob_mod = float(raw_preds[1])
+                raw_prob_real = float(raw_preds[2])
+
+                # Calibrated probabilities used for inference decision
+                prob_ai_gen = float(calibrated[0])
+                prob_ai_mod = float(calibrated[1])
+                prob_real = float(calibrated[2])
+
+                top_idx = int(np.argmax(calibrated))
                 sub_type = self.class_mapping.get(top_idx, "ai_generated")
 
                 # Verdict: REAL (class 2) vs AI-MODIFIED (classes 0 or 1)
                 verdict = "REAL" if top_idx == 2 else "AI-MODIFIED"
-                confidence = round(float(raw_preds[top_idx]) * 100, 2)
+                confidence = round(float(calibrated[top_idx]) * 100, 2)
                 fake_prob = round(prob_ai_gen + prob_ai_mod, 4)
                 real_prob = round(prob_real, 4)
 
@@ -184,6 +195,7 @@ class DeepfakeImageDetector:
                 print(f"[WARN] Inference exception: {e}")
                 fake_prob, real_prob, confidence, verdict, sub_type = 0.912, 0.088, 91.2, "AI-MODIFIED", "ai_generated"
                 prob_ai_gen, prob_ai_mod = 0.85, 0.062
+                raw_prob_gen, raw_prob_mod, raw_prob_real = 0.85, 0.062, 0.088
                 explanation = f"Inference encountered an error ({str(e)}); fallback result generated."
                 breakdown = []
         else:
@@ -192,6 +204,7 @@ class DeepfakeImageDetector:
             real_prob = 0.088
             prob_ai_gen = 0.850
             prob_ai_mod = 0.062
+            raw_prob_gen, raw_prob_mod, raw_prob_real = 0.850, 0.062, 0.088
             confidence = 91.2
             verdict = "AI-MODIFIED"
             sub_type = "ai_generated"
@@ -213,6 +226,12 @@ class DeepfakeImageDetector:
                 "real": prob_real,
                 "fake": fake_prob,
                 "real_score": real_prob
+            },
+            "raw_probabilities": {
+                "ai_generated": raw_prob_gen,
+                "ai_modified": raw_prob_mod,
+                "real": raw_prob_real,
+                "fake": round(raw_prob_gen + raw_prob_mod, 4)
             },
             "breakdown": breakdown,
             "detected_regions": faces,
