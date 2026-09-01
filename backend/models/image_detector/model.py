@@ -60,11 +60,11 @@ class DeepfakeImageDetector:
         """
         Preprocess image EXACTLY as during training:
         1. Direct resize to 224x224 (no face cropping - removed during training)
-        2. RGB conversion
-        3. EfficientNet preprocess_input normalization
+        2. RGB conversion (if loaded via OpenCV BGR)
+        3. Cast to float32 (raw 0-255 values, model handles Rescaling/Normalization internally)
+        4. No further scaling/normalization (NO divide by 255, NO preprocess_input)
         """
         import cv2
-        from tensorflow.keras.applications.efficientnet import preprocess_input
 
         img_bgr = cv2.imread(image_path)
         if img_bgr is None:
@@ -76,14 +76,11 @@ class DeepfakeImageDetector:
         # 1. Direct resize to 224x224 (INTER_LINEAR)
         resized = cv2.resize(img_bgr, (224, 224), interpolation=cv2.INTER_LINEAR)
 
-        # 2. RGB conversion
+        # 2. RGB conversion & float32 casting (raw 0-255 range)
         img_rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB).astype(np.float32)
 
-        # 3. EfficientNet preprocess_input normalization
-        preprocessed = preprocess_input(img_rgb)
-
-        # 4. Expand dimensions for batch: (1, 224, 224, 3)
-        return np.expand_dims(preprocessed, axis=0)
+        # 3. Expand dimensions for batch: (1, 224, 224, 3)
+        return np.expand_dims(img_rgb, axis=0)
 
     def predict(self, image_path: str) -> Dict[str, Any]:
         """
