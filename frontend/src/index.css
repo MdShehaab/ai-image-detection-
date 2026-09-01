@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --lab-bg: #14171C;
+  --lab-panel: #1C2029;
+  --lab-border: #2A2F3A;
+  --lab-accent: #4FD6C4;
+  --lab-verified: #6FCF97;
+  --lab-flagged: #E8603C;
+  --lab-text: #E7E9EC;
+  --lab-muted: #8B93A3;
+}
+
+@layer base {
+  body {
+    background-color: var(--lab-bg);
+    color: var(--lab-text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Accessible visible keyboard focus */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--lab-accent) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #14171C;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2A2F3A;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3A4150;
+  }
+}
+
+@layer components {
+  /* Forensic Panel */
+  .lab-card {
+    background-color: var(--lab-panel);
+    border: 1px solid var(--lab-border);
+  }
+
+  /* Signature Scan Beam line */
+  .scan-beam-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--lab-accent);
+    box-shadow: 0 0 12px var(--lab-accent), 0 0 24px rgba(79, 214, 196, 0.7);
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* Animated sweep */
+  @keyframes sweepAnimation {
+    0% {
+      top: 0%;
+      opacity: 0.7;
+    }
+    50% {
+      top: 98%;
+      opacity: 1;
+    }
+    100% {
+      top: 0%;
+      opacity: 0.7;
+    }
+  }
+
+  .animate-sweep {
+    animation: sweepAnimation 2.2s ease-in-out infinite;
+  }
+
+  /* Disable scan beam movement when prefers-reduced-motion is enabled */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-sweep {
+      animation: none !important;
+      top: 50% !important;
+      opacity: 0.6 !important;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Forensic scanline grid texture */
+  .scanline-overlay {
+    background: linear-gradient(
+      rgba(20, 23, 28, 0) 50%, 
+      rgba(0, 0, 0, 0.25) 50%
+    ), linear-gradient(
+      90deg,
+      rgba(79, 214, 196, 0.03),
+      rgba(0, 0, 0, 0),
+      rgba(79, 214, 196, 0.03)
+    );
+    background-size: 100% 4px, 6px 100%;
+    pointer-events: none;
+  }
+
+  /* Subtle static scan grid overlay (5% opacity) */
+  .static-grid-overlay {
+    background-image: 
+      linear-gradient(to right, rgba(79, 214, 196, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(79, 214, 196, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+  }
+
+  /* Rubber Stamp Impression Marking */
+  .verdict-stamp-verified {
+    border: 3px double var(--lab-verified);
+    color: var(--lab-verified);
+    box-shadow: inset 0 0 12px rgba(111, 207, 151, 0.15), 0 0 16px rgba(111, 207, 151, 0.12);
+    transform: rotate(-1.5deg);
+  }
+
+  .verdict-stamp-flagged {
+    border: 3px double var(--lab-flagged);
+    color: var(--lab-flagged);
+    box-shadow: inset 0 0 12px rgba(232, 96, 60, 0.15), 0 0 16px rgba(232, 96, 60, 0.12);
+    transform: rotate(1.5deg);
+  }
+
+  /* Forensic Terminal Panel */
+  .terminal-panel {
+    background-color: #12151A;
+    border: 1px solid var(--lab-border);
+    font-family: 'JetBrains Mono', monospace;
+  }
+}

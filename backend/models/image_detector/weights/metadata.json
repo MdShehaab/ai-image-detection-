@@ -1,0 +1,21 @@
+{
+  "model_name": "EfficientNetB0_Authenticity_3Class",
+  "classes": [
+    "ai_generated",
+    "ai_modified",
+    "real"
+  ],
+  "class_to_idx": {
+    "ai_generated": 0,
+    "ai_modified": 1,
+    "real": 2
+  },
+  "idx_to_class": {
+    "0": "ai_generated",
+    "1": "ai_modified",
+    "2": "real"
+  },
+  "input_size": [224, 224],
+  "preprocessing": "tf.keras.applications.efficientnet.preprocess_input",
+  "face_cropping": false
+}

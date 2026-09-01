@@ -1,0 +1,830 @@
+{
+  "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\dataset": {
+    "root": "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\dataset",
+    "tree": {},
+    "subfolder_stats": {
+      ".": {
+        "depth": 0,
+        "total_files": 1,
+        "subdirectories_count": 6,
+        "subdirectories": [
+          "document",
+          "image_detection",
+          "news",
+          "test",
+          "train",
+          "validation"
+        ],
+        "file_types": {
+          "[no_ext]": 1
+        },
+        "sample_files": [
+          ".gitkeep"
+        ]
+      },
+      "document": {
+        "depth": 1,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "validation"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "document\\validation": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 4,
+        "subdirectories": [
+          "ai_edited",
+          "digitally_forged",
+          "genuine_scanned",
+          "handwritten_letters"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "document\\validation\\ai_edited": {
+        "depth": 3,
+        "total_files": 5,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".png": 5
+        },
+        "sample_files": [
+          "doc_000.png",
+          "doc_001.png",
+          "doc_002.png"
+        ]
+      },
+      "document\\validation\\digitally_forged": {
+        "depth": 3,
+        "total_files": 5,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".png": 5
+        },
+        "sample_files": [
+          "doc_000.png",
+          "doc_001.png",
+          "doc_002.png"
+        ]
+      },
+      "document\\validation\\genuine_scanned": {
+        "depth": 3,
+        "total_files": 5,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".png": 5
+        },
+        "sample_files": [
+          "doc_000.png",
+          "doc_001.png",
+          "doc_002.png"
+        ]
+      },
+      "document\\validation\\handwritten_letters": {
+        "depth": 3,
+        "total_files": 5,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".png": 5
+        },
+        "sample_files": [
+          "doc_000.png",
+          "doc_001.png",
+          "doc_002.png"
+        ]
+      },
+      "image_detection": {
+        "depth": 1,
+        "total_files": 0,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "test",
+          "train",
+          "validation"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "image_detection\\test": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "ai_generated",
+          "ai_modified",
+          "real"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "image_detection\\test\\ai_generated": {
+        "depth": 3,
+        "total_files": 750,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 750
+        },
+        "sample_files": [
+          "aigenerated_00000.jpg",
+          "aigenerated_00001.jpg",
+          "aigenerated_00002.jpg"
+        ]
+      },
+      "image_detection\\test\\ai_modified": {
+        "depth": 3,
+        "total_files": 750,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 750
+        },
+        "sample_files": [
+          "aimodified_00000.jpg",
+          "aimodified_00001.jpg",
+          "aimodified_00002.jpg"
+        ]
+      },
+      "image_detection\\test\\real": {
+        "depth": 3,
+        "total_files": 750,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 750
+        },
+        "sample_files": [
+          "real_00000.jpg",
+          "real_00001.jpg",
+          "real_00002.jpg"
+        ]
+      },
+      "image_detection\\train": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "ai_generated",
+          "ai_modified",
+          "real"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "image_detection\\train\\ai_generated": {
+        "depth": 3,
+        "total_files": 3550,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 3550
+        },
+        "sample_files": [
+          "aigenerated_00000.jpg",
+          "aigenerated_00001.jpg",
+          "aigenerated_00002.jpg"
+        ]
+      },
+      "image_detection\\train\\ai_modified": {
+        "depth": 3,
+        "total_files": 3550,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 3550
+        },
+        "sample_files": [
+          "aimodified_00000.jpg",
+          "aimodified_00001.jpg",
+          "aimodified_00002.jpg"
+        ]
+      },
+      "image_detection\\train\\real": {
+        "depth": 3,
+        "total_files": 3550,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 3550
+        },
+        "sample_files": [
+          "real_00000.jpg",
+          "real_00001.jpg",
+          "real_00002.jpg"
+        ]
+      },
+      "image_detection\\validation": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "ai_generated",
+          "ai_modified",
+          "real"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "image_detection\\validation\\ai_generated": {
+        "depth": 3,
+        "total_files": 700,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 700
+        },
+        "sample_files": [
+          "aigenerated_00000.jpg",
+          "aigenerated_00001.jpg",
+          "aigenerated_00002.jpg"
+        ]
+      },
+      "image_detection\\validation\\ai_modified": {
+        "depth": 3,
+        "total_files": 700,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 700
+        },
+        "sample_files": [
+          "aimodified_00000.jpg",
+          "aimodified_00001.jpg",
+          "aimodified_00002.jpg"
+        ]
+      },
+      "image_detection\\validation\\real": {
+        "depth": 3,
+        "total_files": 700,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 700
+        },
+        "sample_files": [
+          "real_00000.jpg",
+          "real_00001.jpg",
+          "real_00002.jpg"
+        ]
+      },
+      "news": {
+        "depth": 1,
+        "total_files": 1,
+        "subdirectories_count": 2,
+        "subdirectories": [
+          "isot",
+          "liar"
+        ],
+        "file_types": {
+          ".csv": 1
+        },
+        "sample_files": [
+          "news_dataset.csv"
+        ]
+      },
+      "news\\isot": {
+        "depth": 2,
+        "total_files": 2,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".csv": 2
+        },
+        "sample_files": [
+          "Fake.csv",
+          "True.csv"
+        ]
+      },
+      "news\\liar": {
+        "depth": 2,
+        "total_files": 1,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".tsv": 1
+        },
+        "sample_files": [
+          "train.tsv"
+        ]
+      },
+      "test": {
+        "depth": 1,
+        "total_files": 0,
+        "subdirectories_count": 2,
+        "subdirectories": [
+          "fake",
+          "real"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "test\\fake": {
+        "depth": 2,
+        "total_files": 750,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 750
+        },
+        "sample_files": [
+          "fake_00000.jpg",
+          "fake_00001.jpg",
+          "fake_00002.jpg"
+        ]
+      },
+      "test\\real": {
+        "depth": 2,
+        "total_files": 750,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 750
+        },
+        "sample_files": [
+          "real_00000.jpg",
+          "real_00001.jpg",
+          "real_00002.jpg"
+        ]
+      },
+      "train": {
+        "depth": 1,
+        "total_files": 0,
+        "subdirectories_count": 2,
+        "subdirectories": [
+          "fake",
+          "real"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "train\\fake": {
+        "depth": 2,
+        "total_files": 3550,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 3550
+        },
+        "sample_files": [
+          "fake_00000.jpg",
+          "fake_00001.jpg",
+          "fake_00002.jpg"
+        ]
+      },
+      "train\\real": {
+        "depth": 2,
+        "total_files": 3550,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 3550
+        },
+        "sample_files": [
+          "real_00000.jpg",
+          "real_00001.jpg",
+          "real_00002.jpg"
+        ]
+      },
+      "validation": {
+        "depth": 1,
+        "total_files": 0,
+        "subdirectories_count": 2,
+        "subdirectories": [
+          "fake",
+          "real"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "validation\\fake": {
+        "depth": 2,
+        "total_files": 700,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 700
+        },
+        "sample_files": [
+          "fake_00000.jpg",
+          "fake_00001.jpg",
+          "fake_00002.jpg"
+        ]
+      },
+      "validation\\real": {
+        "depth": 2,
+        "total_files": 700,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 700
+        },
+        "sample_files": [
+          "real_00000.jpg",
+          "real_00001.jpg",
+          "real_00002.jpg"
+        ]
+      }
+    },
+    "labels_files": [
+      {
+        "rel_path": "news\\news_dataset.csv",
+        "full_path": "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\dataset\\news\\news_dataset.csv",
+        "filename": "news_dataset.csv",
+        "size_bytes": 39564,
+        "type": "csv",
+        "columns_or_keys": [
+          "text",
+          "label"
+        ],
+        "sample_record": [
+          "Federal Reserve Announces Interest Rate Hike. The Federal Reserve announced on Wednesday that it is raising its benchmark interest rate by 0.25 percentage points. Economists forecast this move will curb inflation in the coming fiscal quarters. Officials stated that labor markets remain resilient despite policy adjustments. (Batch variation 0)",
+          "0"
+        ],
+        "total_rows": 121
+      },
+      {
+        "rel_path": "news\\isot\\Fake.csv",
+        "full_path": "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\dataset\\news\\isot\\Fake.csv",
+        "filename": "Fake.csv",
+        "size_bytes": 31060,
+        "type": "csv",
+        "columns_or_keys": [
+          "title",
+          "text",
+          "subject",
+          "date"
+        ],
+        "sample_record": [
+          "SHOCKING: Secret Documents Prove Congress Sold Public Parks to Oligarchs!",
+          "SHOCKING: Secret Documents Prove Congress Sold Public Parks to Oligarchs!. Leaked memo reveals top senators secretly transferred title deeds of Yellowstone to global billionaires. Media is completely silent on this corruption! (Sample 0)",
+          "politics",
+          "August 2026"
+        ],
+        "total_rows": 101
+      },
+      {
+        "rel_path": "news\\isot\\True.csv",
+        "full_path": "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\dataset\\news\\isot\\True.csv",
+        "filename": "True.csv",
+        "size_bytes": 31760,
+        "type": "csv",
+        "columns_or_keys": [
+          "title",
+          "text",
+          "subject",
+          "date"
+        ],
+        "sample_record": [
+          "U.S. Senate Passes Bipartisan Infrastructure Bill",
+          "U.S. Senate Passes Bipartisan Infrastructure Bill. In a rare show of bipartisan support, the U.S. Senate voted 68-32 to approve a sweeping infrastructure funding bill. The legislation allocates billions to bridge reconstruction, clean energy, and highway repairs. (Sample 0)",
+          "politics",
+          "August 2026"
+        ],
+        "total_rows": 101
+      }
+    ]
+  },
+  "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\datasets": {
+    "root": "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\datasets",
+    "tree": {},
+    "subfolder_stats": {
+      ".": {
+        "depth": 0,
+        "total_files": 0,
+        "subdirectories_count": 2,
+        "subdirectories": [
+          "genimage_extracted",
+          "processed_3class"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted": {
+        "depth": 1,
+        "total_files": 0,
+        "subdirectories_count": 4,
+        "subdirectories": [
+          "imagenet_ai_0424_sdv5",
+          "imagenet_ai_0424_wukong",
+          "imagenet_glide",
+          "imagenet_midjourney"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_ai_0424_sdv5": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_ai_0424_wukong": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "imagenet_ai_0424_wukong"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_ai_0424_wukong\\imagenet_ai_0424_wukong": {
+        "depth": 3,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "val"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_ai_0424_wukong\\imagenet_ai_0424_wukong\\val": {
+        "depth": 4,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "nature"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_glide": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "imagenet_glide"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_glide\\imagenet_glide": {
+        "depth": 3,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "val"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_glide\\imagenet_glide\\val": {
+        "depth": 4,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "nature"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_midjourney": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "imagenet_midjourney"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_midjourney\\imagenet_midjourney": {
+        "depth": 3,
+        "total_files": 0,
+        "subdirectories_count": 1,
+        "subdirectories": [
+          "val"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "genimage_extracted\\imagenet_midjourney\\imagenet_midjourney\\val": {
+        "depth": 4,
+        "total_files": 0,
+        "subdirectories_count": 2,
+        "subdirectories": [
+          "ai",
+          "nature"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "processed_3class": {
+        "depth": 1,
+        "total_files": 1,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "test",
+          "train",
+          "validation"
+        ],
+        "file_types": {
+          ".csv": 1
+        },
+        "sample_files": [
+          "metadata.csv"
+        ]
+      },
+      "processed_3class\\test": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "AI_GENERATED",
+          "AI_MODIFIED",
+          "REAL"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "processed_3class\\test\\AI_GENERATED": {
+        "depth": 3,
+        "total_files": 2250,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 2250
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\test\\AI_MODIFIED": {
+        "depth": 3,
+        "total_files": 2250,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 2250
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\test\\REAL": {
+        "depth": 3,
+        "total_files": 2250,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 2250
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\train": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "AI_GENERATED",
+          "AI_MODIFIED",
+          "REAL"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "processed_3class\\train\\AI_GENERATED": {
+        "depth": 3,
+        "total_files": 10500,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 10500
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\train\\AI_MODIFIED": {
+        "depth": 3,
+        "total_files": 10500,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 10500
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\train\\REAL": {
+        "depth": 3,
+        "total_files": 10500,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 10500
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\validation": {
+        "depth": 2,
+        "total_files": 0,
+        "subdirectories_count": 3,
+        "subdirectories": [
+          "AI_GENERATED",
+          "AI_MODIFIED",
+          "REAL"
+        ],
+        "file_types": {},
+        "sample_files": []
+      },
+      "processed_3class\\validation\\AI_GENERATED": {
+        "depth": 3,
+        "total_files": 2250,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 2250
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\validation\\AI_MODIFIED": {
+        "depth": 3,
+        "total_files": 2250,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 2250
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      },
+      "processed_3class\\validation\\REAL": {
+        "depth": 3,
+        "total_files": 2250,
+        "subdirectories_count": 0,
+        "subdirectories": [],
+        "file_types": {
+          ".jpg": 2250
+        },
+        "sample_files": [
+          "00000.jpg",
+          "00001.jpg",
+          "00002.jpg"
+        ]
+      }
+    },
+    "labels_files": [
+      {
+        "rel_path": "processed_3class\\metadata.csv",
+        "full_path": "C:\\Users\\sheha\\OneDrive\\Desktop\\AI-Powered Visual Deepfake Detection and Analysis System\\datasets\\processed_3class\\metadata.csv",
+        "filename": "metadata.csv",
+        "size_bytes": 7340676,
+        "type": "csv",
+        "columns_or_keys": [
+          "image_path",
+          "class",
+          "source_dataset",
+          "source_category",
+          "original_path",
+          "split",
+          "group_id"
+        ],
+        "sample_record": [
+          "datasets/processed_3class/train/REAL/00000.jpg",
+          "REAL",
+          "FaceForensics++",
+          "Original",
+          "C:/Users/sheha/Downloads/archive (1)/FF++C32-Frames/Original/776_f0.jpg",
+          "train",
+          "776"
+        ],
+        "total_rows": 45001
+      }
+    ]
+  }
+}
