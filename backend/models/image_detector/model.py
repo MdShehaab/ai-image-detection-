@@ -16,6 +16,12 @@ from preprocessing.image_preprocessing import (
 )
 
 
+# Shared authenticity detection constants
+CLASS_MAPPING = {0: "ai_generated", 1: "ai_modified", 2: "real"}
+CLASS_WEIGHTS = [1.45, 1.52, 1.00]  # ai_generated, ai_modified, real
+DEFAULT_FAKE_THRESHOLD = 0.70
+
+
 class DeepfakeImageDetector:
     """
     Inference engine for deepfake image artifact detection.
@@ -25,14 +31,15 @@ class DeepfakeImageDetector:
     - Index 2: real
     """
 
-    def __init__(self, model_path: Optional[str] = None, fake_threshold: float = 0.70):
+    def __init__(self, model_path: Optional[str] = None, fake_threshold: float = DEFAULT_FAKE_THRESHOLD):
         self.model_path = model_path
         self.fake_threshold = fake_threshold
+        self.class_weights = np.array(CLASS_WEIGHTS, dtype=np.float32)
         self.model = None
         self.model_name = "EfficientNetB0-Authenticity-3Class"
         self.is_loaded = False
         # Class order: 0 -> ai_generated, 1 -> ai_modified, 2 -> real
-        self.class_mapping = {0: "ai_generated", 1: "ai_modified", 2: "real"}
+        self.class_mapping = dict(CLASS_MAPPING)
         self._load_model()
 
     def _load_model(self) -> None:

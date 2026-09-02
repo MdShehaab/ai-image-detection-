@@ -70,18 +70,53 @@ def test_detect_image_endpoint(client):
     assert data["model_version"] == "EfficientNetB0-Authenticity-3Class"
 
 
-def test_detect_video_mock(client):
-    fake_vid = (io.BytesIO(b"FAKE_VIDEO_HEADER_DATA_MP4_SAMPLE"), "test_deepfake.mp4")
+def _create_test_video_path(tmp_path: str = "temp_test_vid.mp4", num_frames: int = 8, fps: int = 10):
+    """Generate a real valid mp4 video file with OpenCV for testing."""
+    import cv2
+    import numpy as np
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    out = cv2.VideoWriter(tmp_path, fourcc, fps, (128, 128))
+    for i in range(num_frames):
+        frame = np.full((128, 128, 3), 100 + i * 15, dtype=np.uint8)
+        out.write(frame)
+    out.release()
+    return tmp_path
+
+
+def test_detect_video_endpoint(client):
+    import os
+    vid_path = _create_test_video_path()
+    try:
+        with open(vid_path, "rb") as f:
+            response = client.post(
+                "/api/detect/video",
+                data={"file": (f, "test_deepfake.mp4")},
+                content_type="multipart/form-data"
+            )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert "verdict" in data
+        assert data["verdict"] in ["REAL", "AI-MODIFIED"]
+        assert "timeline_analysis" in data
+        assert "frame_scores" in data
+        assert "probabilities" in data
+        assert data["module"] == "video_detector"
+        assert len(data["timeline_analysis"]) == 8
+    finally:
+        if os.path.exists(vid_path):
+            os.remove(vid_path)
+
+
+def test_detect_video_corrupt_file(client):
+    fake_vid = (io.BytesIO(b"NOT_A_VALID_MP4_HEADER"), "corrupt.mp4")
     response = client.post(
         "/api/detect/video",
         data={"file": fake_vid},
         content_type="multipart/form-data"
     )
-    assert response.status_code == 200
+    assert response.status_code == 500
     data = json.loads(response.data)
-    assert "verdict" in data
-    assert "timeline_analysis" in data
-    assert data["module"] == "video_detector"
+    assert "error" in data
 
 
 def test_detect_document_mock(client):
@@ -99,15 +134,22 @@ def test_detect_document_mock(client):
 
 
 def test_detect_auto_routing(client):
-    fake_vid = (io.BytesIO(b"FAKE_VIDEO_HEADER_DATA_MP4_SAMPLE"), "auto_test.mp4")
-    response = client.post(
-        "/api/detect/auto",
-        data={"file": fake_vid},
-        content_type="multipart/form-data"
-    )
-    assert response.status_code == 200
-    data = json.loads(response.data)
-    assert data["module"] == "video_detector"
+    import os
+    vid_path = _create_test_video_path("temp_auto_test.mp4")
+    try:
+        with open(vid_path, "rb") as f:
+            response = client.post(
+                "/api/detect/auto",
+                data={"file": (f, "auto_test.mp4")},
+                content_type="multipart/form-data"
+            )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["module"] == "video_detector"
+        assert "verdict" in data
+    finally:
+        if os.path.exists(vid_path):
+            os.remove(vid_path)
 
 
 def test_invalid_file_extension(client):
@@ -128,7 +170,8 @@ if __name__ == "__main__":
         test_health_check(c)
         test_modules_info(c)
         test_detect_image_endpoint(c)
-        test_detect_video_mock(c)
+        test_detect_video_endpoint(c)
+        test_detect_video_corrupt_file(c)
         test_detect_document_mock(c)
         test_detect_auto_routing(c)
         test_invalid_file_extension(c)

@@ -22,7 +22,7 @@ api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 # Singleton model instances initialized on module load
 image_detector = DeepfakeImageDetector()
-video_detector = VideoDeepfakeDetector()
+video_detector = VideoDeepfakeDetector(image_detector=image_detector)
 document_detector = DocumentForgeryDetector()
 
 @api_bp.route("/health", methods=["GET"])
