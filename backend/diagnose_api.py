@@ -1,7 +1,7 @@
 """
 Diagnostic script for testing the live Flask API /api/detect/image endpoint
 against 50 random test split images (17 ai_generated, 17 ai_modified, 16 real)
-from manifest_combined.csv at multiple decision thresholds: 0.5, 0.6, 0.7.
+from manifest_combined.csv at multiple decision thresholds: 0.50, 0.60, 0.70, 0.80, 0.85.
 """
 
 import os
@@ -209,8 +209,59 @@ def evaluate_threshold(results_data: list, threshold: float):
         "total_correct": total_correct,
         "total": total_evaluated,
         "class_stats": class_stats,
-        "cm": cm
+        "cm": cm,
+        "y_pred": y_pred
     }
+
+
+def analyze_misclassified_reals(collected_results: list):
+    """Analyze the exact calibrated and raw probabilities for real images misclassified at threshold 0.70."""
+    print("\n" + "=" * 85, flush=True)
+    print(" 🔬 IN-DEPTH ANALYSIS: REAL SAMPLES MISCLASSIFIED AS AI-MODIFIED AT THRESHOLD 0.70", flush=True)
+    print("=" * 85, flush=True)
+
+    real_samples = [item for item in collected_results if item["true_label"] == "real"]
+    flagged_reals = []
+
+    for item in real_samples:
+        probs = item["probabilities"]
+        p_gen = probs["ai_generated"]
+        p_mod = probs["ai_modified"]
+        p_real = probs["real"]
+        fake_prob = p_gen + p_mod
+
+        if fake_prob >= 0.70:
+            flagged_reals.append((item, fake_prob, p_gen, p_mod, p_real))
+
+    print(f"[*] Total REAL Samples in Test Slice: {len(real_samples)}")
+    print(f"[*] Correctly Identified as REAL     : {len(real_samples) - len(flagged_reals)} / {len(real_samples)}")
+    print(f"[*] Flagged as AI-MODIFIED (at 0.70) : {len(flagged_reals)} / {len(real_samples)}\n", flush=True)
+
+    header = f"{'Sample':<10} | {'Filename':<24} | {'Fake Prob':<10} | {'p(mod)':<9} | {'p(real)':<9} | {'At 0.70':<9} | {'At 0.80':<9} | {'At 0.85':<9}"
+    print(header, flush=True)
+    print("-" * len(header), flush=True)
+
+    for item, fake_prob, p_gen, p_mod, p_real in flagged_reals:
+        idx = item["idx"]
+        fn = item["filename"]
+        raw = item["raw_probabilities"]
+
+        pred_070 = "AI-MOD" if fake_prob >= 0.70 else "REAL"
+        pred_080 = "AI-MOD" if fake_prob >= 0.80 else "REAL"
+        pred_085 = "AI-MOD" if fake_prob >= 0.85 else "REAL"
+
+        print(f"Sample #{idx:02d} | {fn:<24} | {fake_prob*100:6.2f}%   | {p_mod*100:6.2f}% | {p_real*100:6.2f}% | {pred_070:<9} | {pred_080:<9} | {pred_085:<9}", flush=True)
+        print(f"   ↳ [Raw Softmax]: gen={raw.get('ai_generated',0)*100:5.2f}%, mod={raw.get('ai_modified',0)*100:5.2f}%, real={raw.get('real',0)*100:5.2f}%", flush=True)
+
+    # Distribution clustering summary
+    fake_probs = [fp for _, fp, _, _, _ in flagged_reals]
+    above_85 = sum(1 for fp in fake_probs if fp >= 0.85)
+    between_70_85 = sum(1 for fp in fake_probs if 0.70 <= fp < 0.85)
+    
+    print("\n--- Distribution Clustering Summary of the 8 Flagged Real Images ---", flush=True)
+    print(f" * Clustered between 70.0% - 85.0% : {between_70_85} / {len(flagged_reals)} samples", flush=True)
+    print(f" * High Confidence (>= 85.0%)     : {above_85} / {len(flagged_reals)} samples (avg confidence: {np.mean(fake_probs)*100:.2f}%)", flush=True)
+    print("=" * 85 + "\n", flush=True)
 
 
 def main():
@@ -290,6 +341,7 @@ def main():
             "idx": idx + 1,
             "filename": filename,
             "true_label": true_label,
+            "image_path": img_rel_path,
             "probabilities": probs,
             "raw_probabilities": res_json.get("raw_probabilities", {})
         })
@@ -302,25 +354,29 @@ def main():
     total_time = time.time() - start_time
     print(f"\n[*] All 50 API inferences completed in {total_time:.2f}s (Avg {total_time/len(collected_results)*1000:.1f}ms/image)")
 
-    # Evaluate across requested thresholds: 0.5, 0.6, 0.7
-    eval_05 = evaluate_threshold(collected_results, threshold=0.5)
-    eval_06 = evaluate_threshold(collected_results, threshold=0.6)
-    eval_07 = evaluate_threshold(collected_results, threshold=0.7)
+    # Evaluate across all requested thresholds
+    thresholds = [0.50, 0.60, 0.70, 0.80, 0.85]
+    eval_results = []
+    for th in thresholds:
+        eval_results.append(evaluate_threshold(collected_results, threshold=th))
 
-    # Comparative Summary Table
+    # Comprehensive Comparison Matrix Table
     print("\n" + "=" * 85, flush=True)
-    print(" 🏆 THRESHOLD COMPARISON MATRIX (0.5 vs 0.6 vs 0.7)", flush=True)
+    print(" 🏆 THRESHOLD COMPARISON MATRIX (0.50 vs 0.60 vs 0.70 vs 0.80 vs 0.85)", flush=True)
     print("=" * 85, flush=True)
     print(f"{'Threshold':<12} | {'Overall Acc':<14} | {'ai_generated':<15} | {'ai_modified':<15} | {'real Recall':<15}", flush=True)
     print("-" * 85, flush=True)
-    for ev in [eval_05, eval_06, eval_07]:
+    for ev in eval_results:
         t = ev["threshold"]
         o_acc = ev["accuracy"]
         gen_acc = ev["class_stats"]["ai_generated"][2]
         mod_acc = ev["class_stats"]["ai_modified"][2]
         real_acc = ev["class_stats"]["real"][2]
-        print(f"{t:<12.1f} | {o_acc:5.2f}% ({ev['total_correct']}/{ev['total']})   | {gen_acc:5.2f}% ({ev['class_stats']['ai_generated'][0]}/{ev['class_stats']['ai_generated'][1]})    | {mod_acc:5.2f}% ({ev['class_stats']['ai_modified'][0]}/{ev['class_stats']['ai_modified'][1]})    | {real_acc:5.2f}% ({ev['class_stats']['real'][0]}/{ev['class_stats']['real'][1]})", flush=True)
-    print("=" * 85 + "\n", flush=True)
+        print(f"{t:<12.2f} | {o_acc:5.2f}% ({ev['total_correct']}/{ev['total']})   | {gen_acc:5.2f}% ({ev['class_stats']['ai_generated'][0]}/{ev['class_stats']['ai_generated'][1]})    | {mod_acc:5.2f}% ({ev['class_stats']['ai_modified'][0]}/{ev['class_stats']['ai_modified'][1]})    | {real_acc:5.2f}% ({ev['class_stats']['real'][0]}/{ev['class_stats']['real'][1]})", flush=True)
+    print("=" * 85, flush=True)
+
+    # Detailed Inspection of the 8 Real images
+    analyze_misclassified_reals(collected_results)
 
 
 if __name__ == "__main__":

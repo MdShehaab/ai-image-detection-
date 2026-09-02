@@ -25,7 +25,7 @@ class DeepfakeImageDetector:
     - Index 2: real
     """
 
-    def __init__(self, model_path: Optional[str] = None, fake_threshold: float = 0.6):
+    def __init__(self, model_path: Optional[str] = None, fake_threshold: float = 0.70):
         self.model_path = model_path
         self.fake_threshold = fake_threshold
         self.model = None
