@@ -25,8 +25,9 @@ class DeepfakeImageDetector:
     - Index 2: real
     """
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = None, fake_threshold: float = 0.6):
         self.model_path = model_path
+        self.fake_threshold = fake_threshold
         self.model = None
         self.model_name = "EfficientNetB0-Authenticity-3Class"
         self.is_loaded = False
@@ -82,18 +83,20 @@ class DeepfakeImageDetector:
         # 3. Expand dimensions for batch: (1, 224, 224, 3)
         return np.expand_dims(img_rgb, axis=0)
 
-    def predict(self, image_path: str) -> Dict[str, Any]:
+    def predict(self, image_path: str, fake_threshold: Optional[float] = None) -> Dict[str, Any]:
         """
         Run inference on the provided image file using the real trained EfficientNetB0 model.
         
         Args:
             image_path: Absolute or relative path to the image file.
+            fake_threshold: Optional override for decision boundary threshold (default: self.fake_threshold).
             
         Returns:
             Dict containing verdict (REAL vs AI-MODIFIED), specific sub_type (ai_generated,
             ai_modified, real), confidence score, probabilities breakdown, and forensic details.
         """
         start_time = time.time()
+        active_threshold = fake_threshold if fake_threshold is not None else self.fake_threshold
 
         # Extract supplementary forensic metadata and features
         try:
@@ -129,14 +132,20 @@ class DeepfakeImageDetector:
                 prob_ai_mod = float(calibrated[1])
                 prob_real = float(calibrated[2])
 
-                top_idx = int(np.argmax(calibrated))
-                sub_type = self.class_mapping.get(top_idx, "ai_generated")
-
-                # Verdict: REAL (class 2) vs AI-MODIFIED (classes 0 or 1)
-                verdict = "REAL" if top_idx == 2 else "AI-MODIFIED"
-                confidence = round(float(calibrated[top_idx]) * 100, 2)
+                # Threshold-based decision rule
                 fake_prob = round(prob_ai_gen + prob_ai_mod, 4)
                 real_prob = round(prob_real, 4)
+
+                if fake_prob >= active_threshold:
+                    top_idx = 0 if prob_ai_gen > prob_ai_mod else 1
+                    verdict = "AI-MODIFIED"
+                    confidence = round(float(calibrated[top_idx]) * 100, 2)
+                else:
+                    top_idx = 2
+                    verdict = "REAL"
+                    confidence = round(float(prob_real) * 100, 2)
+
+                sub_type = self.class_mapping.get(top_idx, "ai_generated")
 
                 # Contextual forensic explanation based on the genuine prediction
                 if verdict == "REAL":

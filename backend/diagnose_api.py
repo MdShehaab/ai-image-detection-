@@ -1,7 +1,7 @@
 """
 Diagnostic script for testing the live Flask API /api/detect/image endpoint
 against 50 random test split images (17 ai_generated, 17 ai_modified, 16 real)
-from manifest_combined.csv.
+from manifest_combined.csv at multiple decision thresholds: 0.5, 0.6, 0.7.
 """
 
 import os
@@ -64,6 +64,7 @@ def print_environment_and_model_audit():
         print(f"[*] Model File Size     : {file_size_mb:.2f} MB ({os.path.getsize(model_file):,} bytes)", flush=True)
         print(f"[*] Last Modified Time  : {file_mtime}", flush=True)
         print(f"[*] Model SHA256 Hash   : {sha256}", flush=True)
+        print(f"[*] Default FAKE_THRESH : {detector.fake_threshold}", flush=True)
         print(f"[*] Model Status Loaded : {detector.is_loaded}", flush=True)
     else:
         print(f"[!] Warning: Model file not found at {model_file}", flush=True)
@@ -106,7 +107,6 @@ def load_dataset_zips():
 
 def resolve_image_bytes(image_path: str, zips: dict) -> bytes:
     """Retrieve raw image bytes from local disk or zip archives with O(1) lookup."""
-    # 1. Check local filesystem
     candidates = [
         image_path,
         os.path.join(root_dir, image_path),
@@ -117,7 +117,6 @@ def resolve_image_bytes(image_path: str, zips: dict) -> bytes:
             with open(cand, "rb") as f:
                 return f.read()
 
-    # 2. Check zip archives with O(1) set membership
     clean_p3 = image_path.replace("processed_3class/", "")
     clean_id = image_path.replace("image_detection/", "")
 
@@ -136,6 +135,82 @@ def resolve_image_bytes(image_path: str, zips: dict) -> bytes:
                 return zf.read(cand)
 
     raise FileNotFoundError(f"Could not locate image file for '{image_path}' in local disk or zip archives.")
+
+
+def evaluate_threshold(results_data: list, threshold: float):
+    """Evaluate accuracy and confusion matrix for a specific FAKE_THRESHOLD."""
+    classes = ["ai_generated", "ai_modified", "real"]
+    class_to_idx = {c: i for i, c in enumerate(classes)}
+
+    y_true = []
+    y_pred = []
+    y_verdict = []
+
+    for item in results_data:
+        true_label = item["true_label"]
+        probs = item["probabilities"]
+
+        p_gen = probs["ai_generated"]
+        p_mod = probs["ai_modified"]
+        p_real = probs["real"]
+        fake_prob = p_gen + p_mod
+
+        if fake_prob >= threshold:
+            pred_label = "ai_generated" if p_gen > p_mod else "ai_modified"
+            verdict = "AI-MODIFIED"
+        else:
+            pred_label = "real"
+            verdict = "REAL"
+
+        y_true.append(true_label)
+        y_pred.append(pred_label)
+        y_verdict.append(verdict)
+
+    total_evaluated = len(y_true)
+    total_correct = sum(1 for t, p in zip(y_true, y_pred) if t == p)
+    acc = (total_correct / total_evaluated) * 100 if total_evaluated > 0 else 0
+
+    print("\n" + "=" * 85, flush=True)
+    print(f" 📊 RESULTS FOR FAKE_THRESHOLD = {threshold:.2f} ({int(threshold*100)}% Confidence Required to Flag Fake)", flush=True)
+    print("=" * 85, flush=True)
+    print(f"[*] Overall Test Accuracy : {acc:.2f}% ({total_correct} / {total_evaluated})", flush=True)
+    print("-" * 85, flush=True)
+
+    # Per-Class Breakdown
+    print("--- Per-Class Recall / Accuracy Breakdown ---", flush=True)
+    class_stats = {}
+    for c in classes:
+        c_true_indices = [i for i, t in enumerate(y_true) if t == c]
+        if c_true_indices:
+            c_correct = sum(1 for i in c_true_indices if y_pred[i] == c)
+            c_total = len(c_true_indices)
+            c_acc = (c_correct / c_total) * 100
+            class_stats[c] = (c_correct, c_total, c_acc)
+            print(f" * {c:<14}: {c_acc:6.2f}% ({c_correct:02d}/{c_total:02d} correct)", flush=True)
+
+    # Confusion Matrix
+    cm = np.zeros((3, 3), dtype=int)
+    for t, p in zip(y_true, y_pred):
+        if t in class_to_idx and p in class_to_idx:
+            cm[class_to_idx[t]][class_to_idx[p]] += 1
+
+    print("\n--- Confusion Matrix ---", flush=True)
+    header = f"{'True \\ Pred':<16} | {'ai_generated':<13} | {'ai_modified':<13} | {'real':<13}"
+    print(header, flush=True)
+    print("-" * len(header), flush=True)
+    for i, c_name in enumerate(classes):
+        row_str = f"{c_name:<16} | {cm[i][0]:<13} | {cm[i][1]:<13} | {cm[i][2]:<13}"
+        print(row_str, flush=True)
+    print("=" * 85, flush=True)
+
+    return {
+        "threshold": threshold,
+        "accuracy": acc,
+        "total_correct": total_correct,
+        "total": total_evaluated,
+        "class_stats": class_stats,
+        "cm": cm
+    }
 
 
 def main():
@@ -178,17 +253,10 @@ def main():
     client = app.test_client()
 
     print("\n" + "=" * 85, flush=True)
-    print(" [*] RUNNING LIVE /api/detect/image ENDPOINT EVALUATION (50 Samples)", flush=True)
+    print(" [*] SENDING 50 SAMPLES THROUGH LIVE /api/detect/image ENDPOINT", flush=True)
     print("=" * 85, flush=True)
 
-    y_true = []
-    y_pred = []
-    y_verdict = []
-    y_conf = []
-
-    classes = ["ai_generated", "ai_modified", "real"]
-    class_to_idx = {c: i for i, c in enumerate(classes)}
-
+    collected_results = []
     start_time = time.time()
 
     for idx, row in sample_50.iterrows():
@@ -202,7 +270,6 @@ def main():
             print(f"[{idx+1:02d}/50] [ERROR] Failed to load image {img_rel_path}: {e}", flush=True)
             continue
 
-        # Post exactly as frontend / HTTP client does with multipart/form-data
         data = {
             "file": (io.BytesIO(img_bytes), filename)
         }
@@ -217,66 +284,42 @@ def main():
             continue
 
         res_json = json.loads(res.data)
-        pred_label = res_json.get("sub_type") or res_json.get("prediction_subtype")
-        verdict = res_json.get("verdict")
-        confidence = res_json.get("confidence", 0.0)
+        probs = res_json.get("probabilities", {})
 
-        y_true.append(true_label)
-        y_pred.append(pred_label)
-        y_verdict.append(verdict)
-        y_conf.append(confidence)
+        collected_results.append({
+            "idx": idx + 1,
+            "filename": filename,
+            "true_label": true_label,
+            "probabilities": probs,
+            "raw_probabilities": res_json.get("raw_probabilities", {})
+        })
 
-        is_correct = (pred_label == true_label)
-        status_sym = "[CORRECT]" if is_correct else "[ WRONG ]"
-        current_correct = sum(1 for t, p in zip(y_true, y_pred) if t == p)
-        current_total = len(y_true)
-        current_acc = (current_correct / current_total) * 100
-
-        print(f" [{current_total:02d}/50] {status_sym:<9} | True: {true_label:<12} -> Pred: {pred_label:<12} (Verdict: {verdict:<11}, Conf: {confidence:5.1f}%) | Acc: {current_correct:02d}/{current_total:02d} ({current_acc:5.1f}%)", flush=True)
+        p_gen = probs.get("ai_generated", 0.0)
+        p_mod = probs.get("ai_modified", 0.0)
+        p_real = probs.get("real", 0.0)
+        print(f" [{idx+1:02d}/50] True: {true_label:<12} | Calibrated Probs -> Gen: {p_gen*100:5.1f}%, Mod: {p_mod*100:5.1f}%, Real: {p_real*100:5.1f}% (Fake Total: {(p_gen+p_mod)*100:5.1f}%)", flush=True)
 
     total_time = time.time() - start_time
-    total_evaluated = len(y_true)
-    total_correct = sum(1 for t, p in zip(y_true, y_pred) if t == p)
-    final_accuracy = (total_correct / total_evaluated) * 100 if total_evaluated > 0 else 0
+    print(f"\n[*] All 50 API inferences completed in {total_time:.2f}s (Avg {total_time/len(collected_results)*1000:.1f}ms/image)")
 
+    # Evaluate across requested thresholds: 0.5, 0.6, 0.7
+    eval_05 = evaluate_threshold(collected_results, threshold=0.5)
+    eval_06 = evaluate_threshold(collected_results, threshold=0.6)
+    eval_07 = evaluate_threshold(collected_results, threshold=0.7)
+
+    # Comparative Summary Table
     print("\n" + "=" * 85, flush=True)
-    print(" [*] FINAL DIAGNOSTIC EVALUATION RESULTS", flush=True)
+    print(" 🏆 THRESHOLD COMPARISON MATRIX (0.5 vs 0.6 vs 0.7)", flush=True)
     print("=" * 85, flush=True)
-    print(f"[*] Total Samples Tested : {total_evaluated}", flush=True)
-    print(f"[*] Total Correct        : {total_correct}", flush=True)
-    print(f"[*] Overall Test Accuracy: {final_accuracy:.2f}% ({total_correct} / {total_evaluated})", flush=True)
-    print(f"[*] Total Inference Time : {total_time:.2f}s (Avg {total_time/max(1, total_evaluated)*1000:.1f}ms/image)", flush=True)
+    print(f"{'Threshold':<12} | {'Overall Acc':<14} | {'ai_generated':<15} | {'ai_modified':<15} | {'real Recall':<15}", flush=True)
     print("-" * 85, flush=True)
-
-    # Per-Class Accuracy Breakdown
-    print("\n--- Per-Class Accuracy Breakdown ---", flush=True)
-    for c in classes:
-        c_true_indices = [i for i, t in enumerate(y_true) if t == c]
-        if c_true_indices:
-            c_correct = sum(1 for i in c_true_indices if y_pred[i] == c)
-            c_total = len(c_true_indices)
-            c_acc = (c_correct / c_total) * 100
-            print(f" * {c:<14}: {c_acc:6.2f}% ({c_correct}/{c_total})", flush=True)
-
-    # Confusion Matrix Calculation
-    cm = np.zeros((3, 3), dtype=int)
-    for t, p in zip(y_true, y_pred):
-        if t in class_to_idx and p in class_to_idx:
-            cm[class_to_idx[t]][class_to_idx[p]] += 1
-
-    print("\n--- Confusion Matrix ---", flush=True)
-    header = f"{'True \\ Pred':<16} | {'ai_generated':<13} | {'ai_modified':<13} | {'real':<13}"
-    print(header, flush=True)
-    print("-" * len(header), flush=True)
-    for i, c_name in enumerate(classes):
-        row_str = f"{c_name:<16} | {cm[i][0]:<13} | {cm[i][1]:<13} | {cm[i][2]:<13}"
-        print(row_str, flush=True)
-
-    print("=" * 85, flush=True)
-    if final_accuracy >= 70.0:
-        print(f"[+] VERDICT: Endpoint inference is performing consistently with training (~82%).", flush=True)
-    else:
-        print(f"[!] VERDICT: Accuracy ({final_accuracy:.2f}%) is significantly lower than expected.", flush=True)
+    for ev in [eval_05, eval_06, eval_07]:
+        t = ev["threshold"]
+        o_acc = ev["accuracy"]
+        gen_acc = ev["class_stats"]["ai_generated"][2]
+        mod_acc = ev["class_stats"]["ai_modified"][2]
+        real_acc = ev["class_stats"]["real"][2]
+        print(f"{t:<12.1f} | {o_acc:5.2f}% ({ev['total_correct']}/{ev['total']})   | {gen_acc:5.2f}% ({ev['class_stats']['ai_generated'][0]}/{ev['class_stats']['ai_generated'][1]})    | {mod_acc:5.2f}% ({ev['class_stats']['ai_modified'][0]}/{ev['class_stats']['ai_modified'][1]})    | {real_acc:5.2f}% ({ev['class_stats']['real'][0]}/{ev['class_stats']['real'][1]})", flush=True)
     print("=" * 85 + "\n", flush=True)
 
 
