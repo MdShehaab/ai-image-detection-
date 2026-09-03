@@ -7,7 +7,8 @@ in certificates, academic records, invoices, and permission letters).
 
 Uses multi-modal forensic signals (OCR text field segmentation, font glyph & stroke
 consistency, Error Level Analysis (ELA), and local noise/texture variance)
-to detect and highlight the exact tampered region.
+with COMPRESSION-ADAPTIVE WEIGHTING to detect and highlight exact tampered regions
+even on lossy, re-compressed (e.g., WhatsApp-forwarded) documents.
 """
 
 import os
@@ -38,6 +39,11 @@ class DocumentForgeryDetector:
     Forensic inference engine targeting localized text-field tampering.
     Analyzes font stroke consistency, local compression ELA, and background noise variance
     within OCR-segmented text regions across document scans and PDFs.
+    
+    Includes Compression-Adaptive Weighting:
+    Dynamically adjusts forensic signal weights based on JPEG quantization analysis.
+    On heavily compressed documents (e.g., WhatsApp forwards), ELA and substrate noise
+    are down-weighted while font geometry / stroke consistency is prioritized.
     """
 
     def __init__(self, model_path: Optional[str] = None, tamper_threshold: float = 0.65):
@@ -46,10 +52,58 @@ class DocumentForgeryDetector:
         self.model_name = "Veritas-Doc-LocalizedForensics-v2"
         self.is_loaded = True
 
+    def estimate_jpeg_compression(self, file_path: str, pil_img: Image.Image) -> Dict[str, Any]:
+        """
+        Analyze JPEG quantization tables, file size, and resolution to determine
+        the document's compression history and fidelity level.
+        """
+        file_size = os.path.getsize(file_path)
+        w, h = pil_img.size
+        bpp = (file_size * 8) / (w * h) if (w * h) > 0 else 1.0
+
+        luma_quant_mean = 1.0
+        estimated_q = 95
+        has_quant = False
+
+        if hasattr(pil_img, "quantization") and pil_img.quantization and 0 in pil_img.quantization:
+            has_quant = True
+            luma_table = list(pil_img.quantization[0])
+            luma_quant_mean = float(np.mean(luma_table))
+            # Standard JPEG quality mapping from quantization table mean
+            estimated_q = max(1, min(100, int(100 - luma_quant_mean * 1.6)))
+        elif bpp < 0.8:
+            # Low bits-per-pixel fallback for compressed formats without accessible tables
+            estimated_q = max(20, int(bpp * 50))
+            luma_quant_mean = 28.0
+
+        # Categorize compression level
+        if estimated_q < 60 or luma_quant_mean > 18.0 or bpp < 1.0:
+            compression_level = "high"  # Heavily compressed / WhatsApp forward
+            mode_desc = "Font-Geometry-Prioritized (Lossy Recompression Detected)"
+            warning = "Document has undergone significant lossy compression. High-frequency paper grain and ELA residuals are flattened, so font stroke and glyph consistency are given higher diagnostic weight."
+        elif estimated_q < 82 or luma_quant_mean > 6.0:
+            compression_level = "medium"  # Moderate JPEG compression
+            mode_desc = "Balanced Multi-Modal Forensics"
+            warning = None
+        else:
+            compression_level = "low"  # High fidelity scan / Raw PDF raster
+            mode_desc = "Full Multi-Modal Forensics (High Fidelity)"
+            warning = None
+
+        return {
+            "estimated_quality_pct": estimated_q,
+            "compression_level": compression_level,
+            "luma_quant_mean": round(luma_quant_mean, 2),
+            "bits_per_pixel": round(bpp, 3),
+            "has_quantization_tables": has_quant,
+            "adaptive_mode": mode_desc,
+            "compression_warning": warning
+        }
+
     def load_document_image(self, file_path: str) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Load document from PDF or Image file into a standard RGB numpy array (DPI-scaled).
-        Extracts structural document metadata.
+        Extracts structural document metadata and JPEG quantization profiles.
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Document file not found at: {file_path}")
@@ -113,16 +167,21 @@ class DocumentForgeryDetector:
             if img_bgr is None:
                 raise ValueError(f"Failed to render PDF document '{os.path.basename(file_path)}'.")
 
+            metadata["compression_analysis"] = {
+                "estimated_quality_pct": 100,
+                "compression_level": "low",
+                "luma_quant_mean": 1.0,
+                "bits_per_pixel": 8.0,
+                "adaptive_mode": "Vector PDF Rasterization (High Fidelity)",
+                "compression_warning": None
+            }
+
         # 2. Handle Image Files
         else:
-            img_bgr = cv2.imread(file_path)
-            if img_bgr is None:
-                try:
-                    with Image.open(file_path) as pil_img:
-                        img_rgb = np.array(pil_img.convert("RGB"))
-                        img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-                except Exception as e:
-                    raise ValueError(f"Failed to read document image '{os.path.basename(file_path)}': {e}")
+            pil_img = Image.open(file_path)
+            metadata["compression_analysis"] = self.estimate_jpeg_compression(file_path, pil_img)
+            img_rgb = np.array(pil_img.convert("RGB"))
+            img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
 
         # Standardize size: cap max dimension at 2400 for speed while preserving high resolution
         h, w = img_bgr.shape[:2]
@@ -301,7 +360,8 @@ class DocumentForgeryDetector:
             
         Returns:
             Dict containing verdict (REAL vs FORGED), confidence, tampered_regions
-            with exact pixel bounding boxes, forensic metrics breakdown, and visual overlay.
+            with exact pixel bounding boxes, forensic metrics breakdown, compression analysis,
+            and visual overlay.
         """
         start_time = time.time()
         threshold = tamper_threshold if tamper_threshold is not None else self.tamper_threshold
@@ -355,7 +415,36 @@ class DocumentForgeryDetector:
         med_noise = float(np.median(noise_variances))
         iqr_noise = max(1.0, float(np.percentile(noise_variances, 75) - np.percentile(noise_variances, 25)))
 
-        # 5. Score Each Region for Localized Tampering
+        # ----------------------------------------------------------------------------------
+        # 5. COMPRESSION-ADAPTIVE FORENSIC WEIGHTING
+        # ----------------------------------------------------------------------------------
+        # Rationale:
+        # Lossy DCT quantization (e.g., WhatsApp / Telegram / repeated JPEG re-saves)
+        # severely attenuates high-frequency paper grain and flattens compression error residuals (ELA).
+        # However, typographic stroke width geometry (computed via Euclidean distance transform)
+        # and edge anti-aliasing sharpness remain preserved and robust under recompression.
+        #
+        # If the document has high lossy compression (estimated_q < 60% or luma_quant_mean > 18),
+        # we dynamically elevate font geometry weight and reduce ELA/noise weights to prevent
+        # false positives on smoothed paper while maintaining sharp detection on pasted text.
+        # ----------------------------------------------------------------------------------
+        comp_info = doc_metadata.get("compression_analysis", {})
+        comp_level = comp_info.get("compression_level", "low")
+
+        if comp_level == "high":
+            weight_font = 0.75
+            weight_ela = 0.15
+            weight_noise = 0.10
+        elif comp_level == "medium":
+            weight_font = 0.60
+            weight_ela = 0.25
+            weight_noise = 0.15
+        else:  # "low" (clean uncompressed scan / PDF raster)
+            weight_font = 0.50
+            weight_ela = 0.30
+            weight_noise = 0.20
+
+        # 6. Score Each Region for Localized Tampering
         tampered_regions = []
         annotated_overlay = img_bgr.copy()
 
@@ -385,9 +474,9 @@ class DocumentForgeryDetector:
                 dev_noise = abs(f["noise_variance"] - med_noise) / iqr_noise
                 noise_anomaly = min(1.0, dev_noise / 3.0)
 
-                # Combined score
+                # Compression-Adaptive Composite Tamper Score
                 tamper_score = round(float(
-                    0.50 * font_anomaly + 0.30 * ela_anomaly + 0.20 * noise_anomaly
+                    weight_font * font_anomaly + weight_ela * ela_anomaly + weight_noise * noise_anomaly
                 ), 3)
 
                 reasons = []
@@ -442,7 +531,7 @@ class DocumentForgeryDetector:
                 cv2.rectangle(annotated_overlay, (bx, badge_y - th - 4), (bx + tw + 6, badge_y + 2), (60, 96, 232), 1)
                 cv2.putText(annotated_overlay, label_text, (bx + 3, badge_y - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (60, 96, 232), 1, cv2.LINE_AA)
 
-        # 6. Overall Document Verdict & Aggregation
+        # 7. Overall Document Verdict & Aggregation
         is_tampered = len(tampered_regions) > 0 or doc_metadata.get("metadata_suspicious", False)
 
         if is_tampered:
@@ -470,7 +559,7 @@ class DocumentForgeryDetector:
                 f"homogeneous paper background noise, and uniform compression confirmed across {len(candidate_regions)} text regions."
             )
 
-        # 7. Forensic Indicator Breakdown
+        # 8. Forensic Indicator Breakdown
         max_stroke_dev = max([abs(f["stroke_width"] - med_stroke) / iqr_stroke for f in text_feats]) if text_feats else 0.0
         max_ela_dev = max([max(0.0, (f["ela_intensity"] - med_ela) / iqr_ela) for f in text_feats]) if text_feats else 0.0
         max_noise_dev = max([abs(f["noise_variance"] - med_noise) / iqr_noise for f in text_feats]) if text_feats else 0.0
@@ -479,30 +568,34 @@ class DocumentForgeryDetector:
             {
                 "metric": "Font Stroke & Glyph Consistency",
                 "score": round(min(99.0, max(1.0, max_stroke_dev * 25.0 + 8.0)), 1),
+                "weight": f"{int(weight_font * 100)}%",
                 "status": "High Anomaly" if max_stroke_dev > 2.8 else "Nominal",
                 "description": f"Maximum stroke width divergence ({max_stroke_dev:.1f}σ) across {len(candidate_regions)} analyzed text blocks."
             },
             {
                 "metric": "Localized Error Level Analysis (ELA)",
                 "score": round(min(99.0, max(1.0, max_ela_dev * 28.0 + 8.0)), 1),
+                "weight": f"{int(weight_ela * 100)}%",
                 "status": "High Anomaly" if max_ela_dev > 2.8 else "Nominal",
                 "description": "Compression resave residual disparity inside OCR text bounding boxes."
             },
             {
                 "metric": "Substrate & Noise Texture Variance",
                 "score": round(min(99.0, max(1.0, max_noise_dev * 22.0 + 8.0)), 1),
+                "weight": f"{int(weight_noise * 100)}%",
                 "status": "Medium Anomaly" if max_noise_dev > 3.0 else "Nominal",
                 "description": "High-frequency paper grain and background substrate variance uniformity."
             },
             {
                 "metric": "Document Metadata & Software Signature",
                 "score": 92.0 if doc_metadata.get("metadata_suspicious") else 12.0,
+                "weight": "Auxiliary",
                 "status": "High Anomaly" if doc_metadata.get("metadata_suspicious") else "Nominal",
                 "description": doc_metadata.get("software_signature", "Standard Scan Container")
             }
         ]
 
-        # 8. Encode Visual Overlay as Data URI
+        # 9. Encode Visual Overlay as Data URI
         overlay_small = annotated_overlay
         if max(img_h, img_w) > 1200:
             scale_disp = 1200.0 / max(img_h, img_w)
@@ -530,6 +623,13 @@ class DocumentForgeryDetector:
             "tampered_regions": tampered_regions,
             "tampered_regions_count": len(tampered_regions),
             "total_text_regions_analyzed": len(candidate_regions),
+            "compression_level": comp_level,
+            "compression_analysis": comp_info,
+            "forensic_weights_applied": {
+                "font_stroke": weight_font,
+                "ela_compression": weight_ela,
+                "substrate_noise": weight_noise
+            },
             "breakdown": breakdown,
             "document_metadata": doc_metadata,
             "overlay_image": overlay_b64,
