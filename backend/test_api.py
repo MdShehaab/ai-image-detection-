@@ -119,17 +119,20 @@ def test_detect_video_corrupt_file(client):
     assert "error" in data
 
 
-def test_detect_document_mock(client):
-    fake_doc = (io.BytesIO(b"%PDF-1.4 FAKE_PDF_CONTENT"), "invoice_scan.pdf")
+def test_detect_document_endpoint(client):
+    img_buf = _create_test_image_bytes(color=(250, 250, 250), size=(600, 800))
+    test_doc = (img_buf, "invoice_scan.png")
     response = client.post(
         "/api/detect/document",
-        data={"file": fake_doc},
+        data={"file": test_doc},
         content_type="multipart/form-data"
     )
     assert response.status_code == 200
     data = json.loads(response.data)
     assert "verdict" in data
+    assert data["verdict"] in ["REAL", "AI-MODIFIED"]
     assert "tampered_regions" in data
+    assert "overlay_image" in data
     assert data["module"] == "document_detector"
 
 
@@ -172,7 +175,7 @@ if __name__ == "__main__":
         test_detect_image_endpoint(c)
         test_detect_video_endpoint(c)
         test_detect_video_corrupt_file(c)
-        test_detect_document_mock(c)
+        test_detect_document_endpoint(c)
         test_detect_auto_routing(c)
         test_invalid_file_extension(c)
     print("[PASS] All backend API tests including image detector passed successfully!")
