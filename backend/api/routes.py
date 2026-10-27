@@ -4,8 +4,11 @@ Provides REST endpoints for Image, Video, and Document deepfake/forgery detectio
 """
 
 import os
+import logging
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.exceptions import BadRequest
+
+logger = logging.getLogger(__name__)
 
 from utils.file_utils import (
     is_allowed_file,
@@ -17,6 +20,7 @@ from utils.file_utils import (
 from models.image_detector.model import DeepfakeImageDetector
 from models.video_detector.model import VideoDeepfakeDetector
 from models.document_detector.model import DocumentForgeryDetector
+import registry.store as ref_store
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -86,6 +90,13 @@ def detect_image():
     """
     Endpoint: Deepfake Image Detection
     Accepts multipart/form-data with 'file'.
+
+    Optional parameters (query string or form field):
+      compare_face_crop=true   — [EXPERIMENTAL] Run inference with AND without MTCNN
+                                 face-crop preprocessing and return both results in the
+                                 response for side-by-side comparison.  The top-level
+                                 verdict/confidence fields always reflect the standard
+                                 (no-crop) behaviour for backwards compatibility.
     """
     if "file" not in request.files:
         return jsonify({"error": "No file part in request. Please upload an image using 'file' key."}), 400
@@ -99,18 +110,77 @@ def detect_image():
         return jsonify({
             "error": f"Invalid file format '{get_file_extension(file.filename)}'. Supported formats: {', '.join(allowed_exts)}"
         }), 400
-        
+
+    # Resolve the experimental flag from either query-string or form body
+    raw_flag = request.args.get("compare_face_crop") or request.form.get("compare_face_crop", "false")
+    compare_face_crop = str(raw_flag).strip().lower() in ("1", "true", "yes")
+
     upload_dir = current_app.config.get("UPLOAD_FOLDER", "./uploads")
     saved_path, original_filename = save_uploaded_file(file, upload_dir)
-    
+
     try:
-        results = image_detector.predict(saved_path)
+        # ── 1. CNN inference ─────────────────────────────────────────────
+        results = image_detector.predict(saved_path, compare_face_crop=compare_face_crop)
         results["file_name"] = original_filename
+
+        # ── 2. Reference Check ───────────────────────────────────────────
+        try:
+            import registry.store as _rs
+            # Apply config-driven amplitude cutoff to module global
+            _rs.DIFF_AMPLITUDE_CUTOFF     = current_app.config.get(
+                "REGISTRY_DIFF_AMPLITUDE_CUTOFF", _rs.DIFF_AMPLITUDE_CUTOFF)
+            _rs.MODIFIED_AREA_THRESHOLD   = current_app.config.get(
+                "REGISTRY_MODIFIED_AREA_THRESHOLD", _rs.MODIFIED_AREA_THRESHOLD)
+            _rs.MODIFIED_REGION_THRESHOLD = current_app.config.get(
+                "REGISTRY_MODIFIED_REGION_THRESHOLD", _rs.MODIFIED_REGION_THRESHOLD)
+
+            ref_check = _rs.run_reference_check(
+                upload_path     = saved_path,
+                registry_base   = current_app.config.get("REGISTRY_FOLDER", "./registry/data"),
+                orb_threshold   = current_app.config.get("REGISTRY_ORB_INLIER_THRESHOLD", 15),
+                phash_threshold = current_app.config.get("REGISTRY_PHASH_THRESHOLD",      20),
+                modified_area   = current_app.config.get("REGISTRY_MODIFIED_AREA_THRESHOLD",   0.4),
+                modified_region = current_app.config.get("REGISTRY_MODIFIED_REGION_THRESHOLD", 0.15),
+            )
+        except Exception as ref_err:
+            logger.exception("[routes] Reference check error")
+            ref_check = {"matched": False, "error": str(ref_err)}
+
+        results["reference_check"] = ref_check
+
+        # ── 3. Resolver: reference-check overrides CNN verdict ───────────
+        if ref_check.get("matched") and ref_check.get("verdict") in ("REAL", "AI-MODIFIED"):
+            ref_verdict  = ref_check["verdict"]
+            ref_sublabel = ref_check.get("sub_label", "")
+
+            # Stash the raw CNN output as a secondary field
+            results["classifier_estimate"] = {
+                "verdict":       results.get("verdict"),
+                "confidence":    results.get("confidence"),
+                "probabilities": results.get("probabilities"),
+                "sub_type":      results.get("sub_type"),
+            }
+
+            # Override top-level verdict/confidence/sub_label
+            results["verdict"]       = ref_verdict
+            results["sub_type"]      = "reference_matched"
+            results["sub_label"]     = ref_sublabel
+            # For REAL: push confidence high; for AI-MODIFIED keep existing if available
+            if ref_verdict == "REAL":
+                results["confidence"] = 98.0
+            # probabilities stay the CNN ones (they reflect synthetic-ness signals)
+            results["reference_driven"] = True
+        else:
+            results["reference_driven"] = False
+
         return jsonify(results), 200
+
     except Exception as e:
+        logger.exception("[routes] detect_image pipeline failure")
         return jsonify({"error": f"Image detection pipeline failed: {str(e)}"}), 500
     finally:
         cleanup_file(saved_path)
+
 
 @api_bp.route("/detect/video", methods=["POST"])
 def detect_video():

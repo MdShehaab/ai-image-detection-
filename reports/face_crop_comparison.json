@@ -1,0 +1,35 @@
+[
+  {
+    "photo": "a40e90bd3124_shehaab.jpg",
+    "no_crop_verdict": "REAL",
+    "face_crop_verdict": "AI-MODIFIED",
+    "verdict_changed": true,
+    "no_crop_confidence": 99.89,
+    "face_crop_confidence": 75.07,
+    "no_crop_p_real": 0.9988862872123718,
+    "face_crop_p_real": 0.23433133959770203,
+    "crop_status": "face_detected (conf=1.000, box=[265,134,96,126], crop=[232,90,394,304])"
+  },
+  {
+    "photo": "6e2c3728583f_1.jpg",
+    "no_crop_verdict": "REAL",
+    "face_crop_verdict": "REAL",
+    "verdict_changed": false,
+    "no_crop_confidence": 77.77,
+    "face_crop_confidence": 60.56,
+    "no_crop_p_real": 0.7776840925216675,
+    "face_crop_p_real": 0.6055867671966553,
+    "crop_status": "face_detected (conf=0.999, box=[89,154,683,869], crop=[0,0,899,1327])"
+  },
+  {
+    "photo": "cf8c10b57529_download_2.jpg",
+    "no_crop_verdict": "REAL",
+    "face_crop_verdict": "REAL",
+    "verdict_changed": false,
+    "no_crop_confidence": 80.07,
+    "face_crop_confidence": 77.65,
+    "no_crop_p_real": 0.8006609082221985,
+    "face_crop_p_real": 0.7765423059463501,
+    "crop_status": "face_detected (conf=0.989, box=[193,174,300,422], crop=[88,27,598,743])"
+  }
+]

@@ -1,13 +1,13 @@
 import React from 'react';
-import { Shield, Terminal, Cpu, Lock, CheckCircle2 } from 'lucide-react';
+import { Shield, Terminal, Cpu, Lock } from 'lucide-react';
 
-export default function Footer() {
+export default function Footer({ onNavigateToTransparency }) {
   return (
     <footer className="border-t border-[#2A2F3A] bg-[#14171C] text-[#8B93A3] py-8 mt-auto font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          
-          {/* Brand Col */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+
+          {/* Brand */}
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <Shield className="w-4 h-4 text-[#4FD6C4]" />
@@ -16,29 +16,36 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-xs text-[#8B93A3] leading-relaxed">
-              Forensic intelligence and media integrity validation engine defending against deepfake synthesis and AI document manipulation.
+              Image authenticity forensics — statistical detection of AI-generated and AI-modified images.
             </p>
           </div>
 
-          {/* Module Specs */}
+          {/* Links */}
           <div>
             <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#E7E9EC] mb-3">
-              Forensic Engines
+              Navigation
             </h4>
             <ul className="space-y-1.5 text-xs font-mono">
-              <li className="text-[#8B93A3] hover:text-[#4FD6C4] transition-colors">
-                MODULE_01 // Image Authenticity
+              <li>
+                <button
+                  onClick={onNavigateToTransparency}
+                  className="text-[#8B93A3] hover:text-[#4FD6C4] transition-colors text-left"
+                >
+                  Model Insights
+                </button>
               </li>
-              <li className="text-[#8B93A3] hover:text-[#4FD6C4] transition-colors">
-                MODULE_02 // Video Temporal
-              </li>
-              <li className="text-[#8B93A3] hover:text-[#4FD6C4] transition-colors">
-                MODULE_03 // Document Forgery
+              <li>
+                <button
+                  onClick={onNavigateToTransparency}
+                  className="text-[#4FD6C4] hover:underline transition-colors flex items-center gap-1 text-[11px]"
+                >
+                  → Accuracy & confusion matrix
+                </button>
               </li>
             </ul>
           </div>
 
-          {/* Architecture */}
+          {/* Infrastructure */}
           <div>
             <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#E7E9EC] mb-3">
               Infrastructure
@@ -59,38 +66,11 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Telemetry Status */}
-          <div>
-            <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#E7E9EC] mb-3">
-              Service Registry
-            </h4>
-            <div className="p-3 rounded-lg bg-[#1C2029] border border-[#2A2F3A] space-y-1.5 font-mono text-[11px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[#8B93A3]">IMAGE_DETECTOR</span>
-                <span className="text-[#6FCF97] flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> READY
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#8B93A3]">VIDEO_ENGINE</span>
-                <span className="text-[#6FCF97] flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> READY
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#8B93A3]">DOCUMENT_OCR</span>
-                <span className="text-[#6FCF97] flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> READY
-                </span>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         <div className="pt-6 border-t border-[#2A2F3A] flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#8B93A3]">
           <p>© 2026 VERITAS FORENSIC RESEARCH LAB. ALL RIGHTS RESERVED.</p>
-          <p className="mt-2 sm:mt-0 text-[#4FD6C4]">STANDARDIZED PROTOCOL // ISO_IEC_27037</p>
+          <p className="mt-2 sm:mt-0 text-[#4FD6C4]">IMAGE AUTHENTICITY FORENSICS // EfficientNetB0</p>
         </div>
       </div>
     </footer>

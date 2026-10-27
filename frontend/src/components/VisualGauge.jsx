@@ -2,13 +2,23 @@ import React from 'react';
 
 /**
  * VisualGauge - Precision Forensic Instrument Readout
- * Restyled with JetBrains Mono numbers, disciplined colors (#6FCF97 / #E8603C),
- * and clean telemetry markers.
+ * 
+ * Props:
+ *   score        — final confidence percentage (0-100), for geometry calculation
+ *   displayScore — animated counter value passed from parent (0 → score over ~800ms)
+ *   verdict      — 'FAKE' | 'AI_MODIFIED' | 'AI_GENERATED' | 'SUSPICIOUS' | 'REAL'
+ *   size         — SVG width/height in px (default 180)
+ *   animate      — when true, ring draws from 0 to target; when false, ring stays at 0
  */
-export default function VisualGauge({ score = 0, verdict = 'FAKE', size = 180 }) {
+export default function VisualGauge({ score = 0, displayScore, verdict = 'FAKE', size = 180, animate = true, label = 'CONFIDENCE' }) {
   const radius = 64;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  // When not yet animating, keep ring fully hidden (dashoffset = circumference = 0%)
+  // When animating, transition to the real dashoffset over 800ms
+  const strokeDashoffset = animate
+    ? circumference - (score / 100) * circumference
+    : circumference;
 
   const isFake = verdict === 'FAKE' || verdict === 'AI_MODIFIED' || verdict === 'AI_GENERATED';
   const isSuspicious = verdict === 'SUSPICIOUS';
@@ -19,13 +29,16 @@ export default function VisualGauge({ score = 0, verdict = 'FAKE', size = 180 })
     ? '#F2C94C' // Warning amber
     : '#6FCF97'; // Verified real accent
 
+  // Number shown in center: use displayScore (count-up) if provided, else static score
+  const shownNumber = displayScore !== undefined ? displayScore : score;
+
   return (
     <div className="relative flex flex-col items-center justify-center select-none">
       <svg
         width={size}
         height={size}
         viewBox="0 0 160 160"
-        className="transform -rotate-90 transition-all duration-1000 ease-out"
+        className="transform -rotate-90"
       >
         {/* Instrument Ticks and Outer Ring */}
         <circle
@@ -48,7 +61,7 @@ export default function VisualGauge({ score = 0, verdict = 'FAKE', size = 180 })
           fill="transparent"
         />
 
-        {/* Dynamic Telemetry Arc */}
+        {/* Dynamic Telemetry Arc — draws itself when animate flips true */}
         <circle
           cx="80"
           cy="80"
@@ -61,18 +74,20 @@ export default function VisualGauge({ score = 0, verdict = 'FAKE', size = 180 })
           strokeLinecap="round"
           style={{
             filter: `drop-shadow(0px 0px 6px ${strokeColor}66)`,
-            transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: animate
+              ? 'stroke-dashoffset 800ms cubic-bezier(0.22, 1, 0.36, 1)'
+              : 'none',
           }}
         />
       </svg>
 
       {/* Center Instrument Monospace Readout */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl font-mono font-bold tracking-tight text-[#E7E9EC]">
-          {score}%
+        <span className="text-3xl font-mono font-bold tracking-tight text-[#E7E9EC] tabular-nums">
+          {shownNumber}%
         </span>
         <span className="text-[9px] font-mono uppercase tracking-widest text-[#8B93A3] mt-0.5">
-          CONFIDENCE
+          {label}
         </span>
       </div>
     </div>

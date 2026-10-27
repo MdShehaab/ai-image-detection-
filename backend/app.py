@@ -8,6 +8,7 @@ from flask_cors import CORS
 
 from config import config_by_name, Config
 from api.routes import api_bp
+from api.registry_routes import registry_bp
 
 def create_app(config_name: str = "default") -> Flask:
     """
@@ -20,8 +21,9 @@ def create_app(config_name: str = "default") -> Flask:
     selected_config = config_by_name.get(config_name, Config)
     app.config.from_object(selected_config)
     
-    # Ensure upload directory exists
+    # Ensure upload and registry directories exist
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    os.makedirs(app.config["REGISTRY_FOLDER"], exist_ok=True)
     
     # Enable CORS for all frontend origins in development
     CORS(
@@ -29,11 +31,12 @@ def create_app(config_name: str = "default") -> Flask:
         resources={r"/api/*": {"origins": "*"}},
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-        methods=["GET", "POST", "OPTIONS"]
+        methods=["GET", "POST", "DELETE", "OPTIONS"]
     )
     
     # Register blueprints
     app.register_blueprint(api_bp)
+    app.register_blueprint(registry_bp)
     
     # Root status endpoint
     @app.route("/", methods=["GET"])
