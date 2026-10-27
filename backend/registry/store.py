@@ -329,18 +329,27 @@ def register_original(image_path: str, original_filename: str,
     phash_val = _phash_from_path(thumb_path)
 
     # ── Face embedding (best-effort; None if no face / deps missing) ──────
+    
+    # Face analysis is optional during registration.
+    # Keep registration lightweight on resource-limited deployments.
     face_meta = None
-    try:
-        from registry.face_embed import get_face_meta as _gfm
-        face_meta = _gfm(thumb)
-        if face_meta:
-            # Drop the full pixel embedding from meta for storage efficiency
-            # (keep it as a key but store it – it's ~4096 floats ≈ 32 KB)
-            logger.info(f"[Registry] Face detected for {entry_id} "
-                        f"(score={face_meta['score']:.2f}, "
-                        f"mode={face_meta['mode']})")
-    except Exception as e:
-        logger.warning(f"[Registry] Face meta failed: {e}")
+
+    if os.environ.get("REGISTRY_FACE_ANALYSIS", "false").lower() == "true":
+        try:
+            from registry.face_embed import get_face_meta as _gfm
+            face_meta = _gfm(thumb)
+
+            if face_meta:
+                logger.info(
+                    f"[Registry] Face detected for {entry_id} "
+                    f"(score={face_meta['score']:.2f}, "
+                    f"mode={face_meta['mode']})"
+                )
+        except Exception as e:
+            logger.warning(f"[Registry] Face meta failed: {e}")
+    else:
+        logger.info("[Registry] Face analysis skipped during registration.")
+
 
     meta = {
         "id":            entry_id,
